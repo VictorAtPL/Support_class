@@ -3,8 +3,8 @@
 Class to support plugins:
 Adding settings, changing templates, adding settings groups, adding templates - installing and deinstalling.
 "A few steps to clean code..."
-(c) 2011 by Victor
-Website: http://www.victor.org.pl/support_class
+(c) 2012 by Victor
+Website: http://www.victor.org.pl/
 License: Free to use, redistribute, BUT don't modify.
 */
 
@@ -14,24 +14,45 @@ if(!defined("IN_MYBB"))
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
 
-/* idk why but need to make it global */
-global $mybb, $db, /* COMPATIBLITY */ $ps;
+define("SUPPORT_CLASS_VERSION", 1.5);
+global $mybb, $db;
 
-/*function plugin_support_update()
+function plugin_support_update()
 {
-	global $cache, $mybb, $datainfo;
+	global $cache, $mybb;
+	
+	if (!in_array("curl", get_loaded_extensions()))
+	{
+		return;
+	}
+	
+	$support_class = $cache->read("support_class");
+	if ($support_class['lastupdate'] > time() - 1 * 60)
+	{
+		return;
+	}
 	
 	$datainfo = array(
 		"bburl" => $mybb->settings['bburl'],
-		"adminemail" => $mybb->settings['adminemail']
+		"adminemail" => $mybb->settings['adminemail'],
+		"mybb_version" => $mybb->version,
+		"support_class_version" => SUPPORT_CLASS_VERSION,
+		"language" => $mybb->settings['cplanguage']
 	);
 	
-	$datainfo['plugins'] = $cache->read("plugins");
+	$datainfo['plugins'] = array();
+	$plugins = $cache->read("plugins");
+	
+	foreach ($plugins['active'] as $plugin)
+	{
+		$info = call_user_func($plugin . "_info");
+		$datainfo['plugins'][$info['name']] = array("name" => $info['name'], "compatibility" => $info['compatibility'], "version" => $info['version'], "guid" => $info['guid'], "author" => $info['author']);
+	}
 	
 	$ch = curl_init();
 	
-	curl_setopt($ch, CURLOPT_URL, "http://www.victor.org.pl/support_class/");
-	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+	curl_setopt($ch, CURLOPT_URL, "http://victor.org.pl/support_class/");
+	curl_setopt($ch, CURLOPT_TIMEOUT, 1);
 	curl_setopt($ch, CURLOPT_HEADER, 0);
 	curl_setopt($ch, CURLOPT_POST, 1);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -45,18 +66,19 @@ global $mybb, $db, /* COMPATIBLITY */ $ps;
 	}
 
 	curl_close($ch);
+	
+	$support_class['lastupdate'] = time();
+	$cache->update("support_class", $support_class);
 }
 
-$plugins->add_hook("admin_load", "plugin_support_update");*/
+$plugins->add_hook("admin_load", "plugin_support_update");
 
 class plugin_support {
 	private $name;
 	protected $prefix;
 
 	private $mybb;
-	
-	// Next time should be changed to private - TAKE CARE COMPATIBILITY
-	public $db;
+	private $db;
 	private $lang;
 
 	private $plugin_info;
@@ -142,12 +164,6 @@ class plugin_support {
 
 	public function install()
 	{
-		if (!in_array("curl", get_loaded_extensions()))
-		{
-			flash_message("CURL extension hasn't been loaded.", "error");
-			admin_redirect("index.php?module=config-plugins");
-		}
-		
 		# SETTINGSGROUP
 		$last_order = $this->db->simple_select("settinggroups", "disporder", "", array('order_by' => 'disporder', 'order_dir' => 'DESC', 'limit' => '1'));
 	
