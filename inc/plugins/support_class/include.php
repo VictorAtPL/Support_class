@@ -45,8 +45,11 @@ function plugin_support_update()
 	
 	foreach ($plugins['active'] as $plugin)
 	{
-		$info = call_user_func($plugin . "_info");
-		$datainfo['plugins'][$info['name']] = array("name" => $info['name'], "compatibility" => $info['compatibility'], "version" => $info['version'], "guid" => $info['guid'], "author" => $info['author']);
+		@$info = call_user_func($plugin . "_info");
+		if (!empty($info))
+		{
+			$datainfo['plugins'][$info['name']] = array("name" => $info['name'], "compatibility" => $info['compatibility'], "version" => $info['version'], "guid" => $info['guid'], "author" => $info['author']);
+		}
 	}
 	
 	$ch = curl_init();
