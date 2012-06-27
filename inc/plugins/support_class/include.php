@@ -14,7 +14,7 @@ if(!defined("IN_MYBB"))
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
 
-define("SUPPORT_CLASS_VERSION", 1.5);
+define("SUPPORT_CLASS_VERSION", 1.6);
 global $mybb, $db;
 
 function plugin_support_update()
